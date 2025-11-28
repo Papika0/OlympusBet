@@ -1,0 +1,365 @@
+// Prisma Schema for OlympusBet - Greek Myth Crypto Casino
+// Implements: User/Wallet/Bet/Faction models for The Odyssey, Golden Fleece, Agora, Factions, and Heralds
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+// The Odyssey - Rank progression from Mortal to God
+enum Rank {
+  MORTAL        // Starting rank
+  HERO          // Bronze tier
+  DEMIGOD       // Silver tier
+  TITAN         // Gold tier
+  OLYMPIAN      // Platinum tier
+  GOD           // Diamond/Max tier
+}
+
+// Faction System - Sparta vs Athens
+enum FactionType {
+  SPARTA
+  ATHENS
+}
+
+// Bet status tracking
+enum BetStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+  REFUNDED
+}
+
+// Transaction types for wallet
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  BET_PLACED
+  BET_WON
+  JACKPOT_WIN
+  CRYPTO_RAIN
+  AFFILIATE_BONUS
+  XP_BONUS
+  FACTION_REWARD
+}
+
+// Chat message types
+enum MessageType {
+  TEXT
+  SYSTEM
+  CRYPTO_RAIN
+  ANNOUNCEMENT
+}
+
+// ==================== USER & AUTH ====================
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String    @unique
+  passwordHash    String
+  avatarUrl       String?
+  isVerified      Boolean   @default(false)
+  isAdmin         Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // The Odyssey - Gamification
+  ambrosia        BigInt    @default(0)  // XP points (Ambrosia)
+  rank            Rank      @default(MORTAL)
+  level           Int       @default(1)
+  
+  // Faction membership
+  factionId       String?
+  faction         Faction?  @relation(fields: [factionId], references: [id])
+  factionJoinedAt DateTime?
+  factionXpContribution BigInt @default(0)
+
+  // Heralds - Affiliate system
+  affiliateCode   String    @unique @default(cuid())
+  referredById    String?
+  referredBy      User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals       User[]    @relation("Referrals")
+  affiliateEarnings BigInt  @default(0)
+  affiliateTier   Int       @default(1)
+
+  // Relations
+  wallet          Wallet?
+  bets            Bet[]
+  chatMessages    ChatMessage[]
+  cryptoRainsSent CryptoRain[]   @relation("RainSender")
+  cryptoRainsReceived CryptoRainClaim[]
+  jackpotWins     JackpotWin[]
+  achievements    UserAchievement[]
+  sessions        UserSession[]
+
+  @@index([rank])
+  @@index([factionId])
+  @@index([referredById])
+  @@index([affiliateCode])
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ==================== WALLET & TRANSACTIONS ====================
+
+model Wallet {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance         BigInt    @default(0)  // In smallest unit (wei/satoshi)
+  currency        String    @default("ETH")
+  lockedBalance   BigInt    @default(0)  // For pending bets
+  totalDeposited  BigInt    @default(0)
+  totalWithdrawn  BigInt    @default(0)
+  totalWagered    BigInt    @default(0)
+  totalWon        BigInt    @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  transactions    Transaction[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  walletId        String
+  wallet          Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  amount          BigInt
+  balanceBefore   BigInt
+  balanceAfter    BigInt
+  description     String?
+  referenceId     String?         // Link to bet/jackpot/rain ID
+  txHash          String?         // Blockchain transaction hash
+  createdAt       DateTime        @default(now())
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ==================== BETTING ====================
+
+model Bet {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameType        String    // e.g., "slots", "dice", "crash", "roulette"
+  gameId          String?   // Specific game identifier
+  amount          BigInt
+  multiplier      Float?    // Winning multiplier
+  payout          BigInt    @default(0)
+  status          BetStatus @default(PENDING)
+  seed            String?   // Provably fair seed
+  nonce           Int?      // Provably fair nonce
+  result          Json?     // Game-specific result data
+  ambrosiaEarned  BigInt    @default(0)  // XP earned from this bet
+  jackpotContribution BigInt @default(0) // Amount contributed to Golden Fleece
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([gameType])
+  @@index([createdAt])
+}
+
+// ==================== GOLDEN FLEECE - PROGRESSIVE JACKPOT ====================
+
+model GoldenFleeceJackpot {
+  id              String    @id @default(cuid())
+  currentAmount   BigInt    @default(0)
+  seedAmount      BigInt    @default(0)  // Minimum jackpot amount
+  contributionRate Float    @default(0.01) // 1% of bets go to jackpot
+  lastWonAt       DateTime?
+  lastWonAmount   BigInt?
+  lastWinnerId    String?
+  totalWonAllTime BigInt    @default(0)
+  timesWon        Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  wins            JackpotWin[]
+}
+
+model JackpotWin {
+  id              String    @id @default(cuid())
+  jackpotId       String
+  jackpot         GoldenFleeceJackpot @relation(fields: [jackpotId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  amount          BigInt
+  triggerBetId    String?   // The bet that triggered the win
+  createdAt       DateTime  @default(now())
+
+  @@index([jackpotId])
+  @@index([userId])
+}
+
+// ==================== THE AGORA - CHAT & CRYPTO RAIN ====================
+
+model ChatRoom {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  isPublic        Boolean   @default(true)
+  factionOnly     FactionType?  // If set, only faction members can join
+  createdAt       DateTime  @default(now())
+  
+  messages        ChatMessage[]
+  cryptoRains     CryptoRain[]
+}
+
+model ChatMessage {
+  id              String      @id @default(cuid())
+  roomId          String
+  room            ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content         String
+  type            MessageType @default(TEXT)
+  isDeleted       Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model CryptoRain {
+  id              String    @id @default(cuid())
+  roomId          String
+  room            ChatRoom  @relation(fields: [roomId], references: [id])
+  senderId        String
+  sender          User      @relation("RainSender", fields: [senderId], references: [id])
+  totalAmount     BigInt
+  amountPerClaim  BigInt
+  maxClaims       Int
+  claimedCount    Int       @default(0)
+  expiresAt       DateTime
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  claims          CryptoRainClaim[]
+
+  @@index([roomId])
+  @@index([isActive])
+}
+
+model CryptoRainClaim {
+  id              String    @id @default(cuid())
+  rainId          String
+  rain            CryptoRain @relation(fields: [rainId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  amount          BigInt
+  claimedAt       DateTime  @default(now())
+
+  @@unique([rainId, userId])  // One claim per user per rain
+  @@index([rainId])
+  @@index([userId])
+}
+
+// ==================== FACTIONS - SPARTA VS ATHENS ====================
+
+model Faction {
+  id              String      @id @default(cuid())
+  type            FactionType @unique
+  name            String      // "Sparta" or "Athens"
+  description     String?
+  iconUrl         String?
+  totalXp         BigInt      @default(0)
+  totalMembers    Int         @default(0)
+  totalWagered    BigInt      @default(0)
+  wins            Int         @default(0)  // War wins
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  members         User[]
+  wars            FactionWar[] @relation("FactionInWars")
+  warsWon         FactionWar[] @relation("FactionWins")
+}
+
+model FactionWar {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  startAt         DateTime
+  endAt           DateTime
+  spartaId        String
+  athensId        String
+  participants    Faction[] @relation("FactionInWars")
+  spartaScore     BigInt    @default(0)
+  athensScore     BigInt    @default(0)
+  winnerId        String?
+  winner          Faction?  @relation("FactionWins", fields: [winnerId], references: [id])
+  prizePool       BigInt    @default(0)
+  isActive        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([isActive])
+  @@index([startAt])
+}
+
+// ==================== GAMIFICATION - ACHIEVEMENTS ====================
+
+model Achievement {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  name            String
+  description     String
+  iconUrl         String?
+  ambrosiaReward  BigInt    @default(0)
+  category        String    // "betting", "social", "faction", "odyssey"
+  requirement     Json      // Conditions to unlock
+  isSecret        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId   String
+  achievement     Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt      DateTime  @default(now())
+  progress        Json?     // Current progress towards achievement
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+}
+
+// ==================== SYSTEM CONFIGURATION ====================
+
+model SystemConfig {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  value           Json
+  description     String?
+  updatedAt       DateTime  @updatedAt
+}

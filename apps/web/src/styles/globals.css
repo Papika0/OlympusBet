@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* OlympusBet Luxury Marble/Gold Theme */
+@layer base {
+  :root {
+    /* Gold colors */
+    --gold-primary: #FFD700;
+    --gold-classic: #D4AF37;
+    --gold-dark: #B8860B;
+    
+    /* Marble colors */
+    --marble-light: #F5F5F5;
+    --marble-medium: #E0E0E0;
+    --marble-dark: #9E9E9E;
+    
+    /* Olympian colors */
+    --olympian-blue: #1E3A5F;
+    
+    /* Faction colors */
+    --sparta-red: #8B0000;
+    --athens-blue: #1E3A5F;
+  }
+
+  body {
+    @apply bg-marble-900 text-marble-100;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+@layer components {
+  /* Gold border effect */
+  .border-gold {
+    border-image: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%) 1;
+  }
+
+  /* Marble card */
+  .card-marble {
+    @apply bg-marble-800 rounded-lg shadow-marble-soft;
+    background: linear-gradient(145deg, #424242 0%, #2a2a2a 100%);
+  }
+
+  /* Gold button */
+  .btn-gold {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300;
+    background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%);
+    color: #1a1a1a;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+  }
+
+  .btn-gold:hover {
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    transform: translateY(-2px);
+  }
+
+  /* Rank badges */
+  .badge-rank {
+    @apply px-3 py-1 rounded-full text-sm font-semibold inline-flex items-center gap-1;
+  }
+
+  .badge-mortal { @apply bg-rank-mortal text-white; }
+  .badge-hero { @apply bg-rank-hero text-white; }
+  .badge-demigod { @apply bg-rank-demigod text-gray-800; }
+  .badge-titan { @apply bg-rank-titan text-gray-800; }
+  .badge-olympian { @apply bg-rank-olympian text-gray-800; }
+  .badge-god { @apply bg-rank-god text-gray-800; }
+
+  /* Faction badges */
+  .badge-sparta {
+    @apply bg-sparta-500 text-white px-3 py-1 rounded-full font-semibold;
+  }
+
+  .badge-athens {
+    @apply bg-athens-500 text-white px-3 py-1 rounded-full font-semibold;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 rounded-full bg-marble-700 overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, #D4AF37 0%, #FFD700 100%);
+  }
+
+  /* Jackpot display */
+  .jackpot-amount {
+    font-family: 'Cinzel', serif;
+    background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+  }
+
+  /* Chat message */
+  .chat-message {
+    @apply p-3 rounded-lg bg-marble-800 mb-2;
+  }
+
+  .chat-message-rain {
+    @apply border-2 border-gold-500 animate-pulse;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%);
+  }
+
+  /* Crypto rain animation */
+  .rain-drop {
+    @apply absolute text-gold-500 animate-float;
+  }
+}
+
+@layer utilities {
+  /* Gold text gradient */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Marble texture overlay */
+  .marble-overlay {
+    position: relative;
+  }
+
+  .marble-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('/textures/marble.png');
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  /* Gold border glow */
+  .border-glow-gold {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3),
+                inset 0 0 10px rgba(212, 175, 55, 0.1);
+  }
+}
