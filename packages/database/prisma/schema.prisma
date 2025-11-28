@@ -1,0 +1,412 @@
+// =============================================================================
+// OlympusBet - Prisma Schema
+// =============================================================================
+// This schema models the core entities for the OlympusBet crypto casino,
+// featuring a Greek Mythology RPG meta-layer with the "Odyssey" leveling system,
+// Faction Wars, and the "Heralds" referral program.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// USER MANAGEMENT
+// =============================================================================
+
+/**
+ * User - The central entity representing a player in OlympusBet.
+ * Every user begins as a "Mortal" and can ascend through ranks by earning Ambrosia (XP).
+ */
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String?   @unique
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Web3 Authentication
+  walletAddress String?   @unique
+  nonce         String?   // For signature verification
+
+  // The Odyssey - Leveling System
+  // Ambrosia: The divine food of the gods, here representing experience points
+  ambrosia      BigInt    @default(0)
+  rank          Rank      @default(MORTAL)
+  
+  // Faction Wars - Users pledge allegiance to Sparta or Athens
+  faction       Faction?  @relation(fields: [factionId], references: [id])
+  factionId     String?
+  factionJoinedAt DateTime?
+
+  // Relationships
+  wallets       Wallet[]
+  transactions  Transaction[]
+  sentMessages  ChatMessage[]
+  rewards       Reward[]
+  
+  // Heralds Referral System
+  // The user who referred this user (their Herald)
+  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
+  referredById  String?
+  // Users this user has referred (their recruits)
+  referrals     User[]    @relation("Referrals")
+  
+  // Referral earnings tracking
+  referralEarnings ReferralEarning[]
+
+  @@index([walletAddress])
+  @@index([rank])
+  @@index([factionId])
+}
+
+/**
+ * Rank - The divine hierarchy of OlympusBet
+ * Users progress through these ranks by accumulating Ambrosia
+ * 
+ * MORTAL: 0 Ambrosia - Starting rank, mere humans
+ * HOPLITE: 1,000 Ambrosia - Greek foot soldiers
+ * HERO: 10,000 Ambrosia - Legendary figures like Achilles
+ * DEMIGOD: 100,000 Ambrosia - Half-divine beings like Hercules
+ * OLYMPIAN: 1,000,000 Ambrosia - Full god status, dwelling on Mount Olympus
+ */
+enum Rank {
+  MORTAL
+  HOPLITE
+  HERO
+  DEMIGOD
+  OLYMPIAN
+}
+
+// =============================================================================
+// WALLET & TRANSACTIONS
+// =============================================================================
+
+/**
+ * Wallet - Stores user cryptocurrency balances
+ * Supports multiple currencies per user
+ */
+model Wallet {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  
+  currency      String    // ETH, BTC, USDT, etc.
+  balance       Decimal   @default(0) @db.Decimal(36, 18)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, currency])
+  @@index([userId])
+}
+
+/**
+ * Transaction - Records all financial movements
+ * Includes deposits, withdrawals, bets, wins, and rewards
+ */
+model Transaction {
+  id            String          @id @default(cuid())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  
+  type          TransactionType
+  currency      String
+  amount        Decimal         @db.Decimal(36, 18)
+  
+  // For bet transactions
+  gameId        String?
+  gameRoundId   String?
+  
+  // Blockchain reference for deposits/withdrawals
+  txHash        String?
+  blockNumber   Int?
+  
+  status        TransactionStatus @default(PENDING)
+  
+  // Ambrosia earned from this transaction (for bets)
+  ambrosiaEarned BigInt         @default(0)
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  BET
+  WIN
+  REWARD
+  ZEUS_RAIN     // Random crypto distribution in chat
+  RAKEBACK      // Faction Wars rakeback bonus
+  REFERRAL      // Herald referral earnings
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// =============================================================================
+// FACTION WARS
+// =============================================================================
+
+/**
+ * Faction - Sparta vs Athens
+ * 
+ * SPARTA: High variance, aggressive bonuses
+ * - Emphasizes bold plays and high-risk rewards
+ * - "With your shield or on it" philosophy
+ * 
+ * ATHENS: Steady cashback, strategic bonuses
+ * - Emphasizes consistent returns and calculated strategy
+ * - "Know thyself" philosophy
+ */
+model Faction {
+  id            String    @id @default(cuid())
+  name          FactionName @unique
+  description   String
+  
+  // Weekly wager tracking for Faction Wars
+  weeklyWager   Decimal   @default(0) @db.Decimal(36, 18)
+  
+  // Bonus configuration
+  // Sparta: Higher variance multipliers
+  // Athens: Higher cashback percentage
+  bonusMultiplier Decimal @default(1) @db.Decimal(5, 2)
+  cashbackRate    Decimal @default(0) @db.Decimal(5, 4)
+  
+  members       User[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum FactionName {
+  SPARTA
+  ATHENS
+}
+
+/**
+ * FactionWar - Weekly competition between Sparta and Athens
+ * The winning faction gets a 5% rakeback boost
+ */
+model FactionWar {
+  id            String    @id @default(cuid())
+  
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  
+  spartaWager   Decimal   @default(0) @db.Decimal(36, 18)
+  athensWager   Decimal   @default(0) @db.Decimal(36, 18)
+  
+  winner        FactionName?
+  rakebackBoost Decimal   @default(0.05) @db.Decimal(5, 4)
+  
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([weekStartDate])
+}
+
+// =============================================================================
+// REWARDS SYSTEM - GOLDEN FLEECE CHESTS
+// =============================================================================
+
+/**
+ * Reward - Level-up rewards (Golden Fleece Chests)
+ * 
+ * The Golden Fleece: In mythology, sought by Jason and the Argonauts.
+ * Here, it represents the treasures users earn upon ascending ranks.
+ */
+model Reward {
+  id            String      @id @default(cuid())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  
+  type          RewardType
+  
+  // For crypto rewards
+  currency      String?
+  amount        Decimal?    @db.Decimal(36, 18)
+  
+  // For NFT rewards
+  nftContract   String?
+  nftTokenId    String?
+  
+  // Associated rank achievement
+  rankAchieved  Rank?
+  
+  claimed       Boolean     @default(false)
+  claimedAt     DateTime?
+  
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+  @@index([claimed])
+}
+
+enum RewardType {
+  GOLDEN_FLEECE_CHEST
+  ZEUS_RAIN
+  FACTION_RAKEBACK
+  LEVEL_UP_BONUS
+}
+
+// =============================================================================
+// HERALDS REFERRAL SYSTEM
+// =============================================================================
+
+/**
+ * ReferralEarning - Tracks earnings from the Heralds referral program
+ * 
+ * Heralds: In ancient Greece, heralds were sacred messengers.
+ * Here, they spread word of OlympusBet and earn from their recruits' play.
+ * 
+ * Multi-tier system:
+ * - Tier 1: Direct referrals (highest %)
+ * - Tier 2: Referrals of referrals (lower %)
+ * - Tier 3: Third-level referrals (lowest %)
+ */
+model ReferralEarning {
+  id              String    @id @default(cuid())
+  
+  // The Herald who earned this commission
+  herald          User      @relation(fields: [heraldId], references: [id], onDelete: Cascade)
+  heraldId        String
+  
+  // The recruit whose wager generated this earning
+  recruitId       String
+  
+  // The transaction that generated this earning
+  transactionId   String
+  
+  tier            Int       // 1, 2, or 3
+  
+  // Commission calculation
+  wagerAmount     Decimal   @db.Decimal(36, 18)
+  houseEdge       Decimal   @db.Decimal(36, 18)
+  commissionRate  Decimal   @db.Decimal(5, 4)  // Percentage of house edge
+  earnedAmount    Decimal   @db.Decimal(36, 18)
+  
+  currency        String
+  
+  paid            Boolean   @default(false)
+  paidAt          DateTime?
+  
+  createdAt       DateTime  @default(now())
+
+  @@index([heraldId])
+  @@index([recruitId])
+  @@index([paid])
+}
+
+/**
+ * ReferralConfig - Configuration for referral commission rates
+ */
+model ReferralConfig {
+  id              String    @id @default(cuid())
+  
+  tier            Int       @unique // 1, 2, or 3
+  commissionRate  Decimal   @db.Decimal(5, 4) // Percentage of house edge
+  
+  // Tier 1: 40% of house edge
+  // Tier 2: 10% of house edge
+  // Tier 3: 5% of house edge
+  
+  isActive        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// =============================================================================
+// THE AGORA - CHAT SYSTEM
+// =============================================================================
+
+/**
+ * ChatMessage - Messages in the global Agora chat
+ * 
+ * The Agora: The central gathering place in ancient Greek city-states.
+ * Here, it serves as the global chat where users interact.
+ */
+model ChatMessage {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  
+  content       String
+  
+  // For Zeus's Rain events
+  isZeusRain    Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/**
+ * ZeusRainEvent - Tracks the divine crypto distributions
+ * 
+ * Zeus's Rain: Every 4 hours, Zeus distributes crypto to active chat users.
+ * This mimics Zeus's role as the supreme god who bestows favors.
+ */
+model ZeusRainEvent {
+  id              String    @id @default(cuid())
+  
+  currency        String
+  totalAmount     Decimal   @db.Decimal(36, 18)
+  
+  // Number of recipients
+  recipientCount  Int
+  amountPerUser   Decimal   @db.Decimal(36, 18)
+  
+  // IDs of users who received the rain
+  recipientIds    String[]
+  
+  executedAt      DateTime  @default(now())
+  
+  // Next scheduled rain
+  nextRainAt      DateTime?
+
+  @@index([executedAt])
+}
+
+// =============================================================================
+// LEVEL THRESHOLDS CONFIGURATION
+// =============================================================================
+
+/**
+ * LevelConfig - Ambrosia thresholds for each rank
+ * Configurable to allow adjustment of progression speed
+ */
+model LevelConfig {
+  id                String    @id @default(cuid())
+  
+  rank              Rank      @unique
+  ambrosiaRequired  BigInt    // Amount of Ambrosia needed to reach this rank
+  
+  // Reward configuration for reaching this rank
+  rewardCurrency    String?
+  rewardAmount      Decimal?  @db.Decimal(36, 18)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}

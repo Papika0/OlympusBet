@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Base styles for the Divine Luxury theme */
+@layer base {
+  :root {
+    /* OlympusBet color tokens */
+    --olympus-midnight: #0f172a;
+    --olympus-navy: #1e293b;
+    --olympus-slate: #334155;
+    --olympus-marble: #f8fafc;
+    --olympus-gold: #ffd700;
+    --olympus-gold-dark: #ff8c00;
+    --olympus-gold-light: #ffe066;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-olympus-midnight text-olympus-marble font-inter antialiased;
+    background-image: 
+      radial-gradient(ellipse at top, rgba(30, 41, 59, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  /* Scrollbar styling for the Divine Luxury theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-olympus-navy;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-olympus-slate rounded-full;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-olympus-gold/50;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Glassmorphism card - polished obsidian with gold borders */
+  .glass-card {
+    @apply relative overflow-hidden rounded-xl;
+    background: linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.9) 0%,
+      rgba(30, 41, 59, 0.7) 100%
+    );
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 215, 0, 0.5),
+      transparent
+    );
+  }
+
+  /* Golden button - Divine call to action */
+  .btn-gold {
+    @apply px-6 py-3 font-cinzel font-semibold rounded-lg;
+    background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+    color: #0f172a;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+  }
+
+  .btn-gold:active {
+    transform: translateY(0);
+  }
+
+  /* Heading styles with Cinzel font */
+  .heading-divine {
+    @apply font-cinzel font-bold tracking-wide;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+
+  /* Zeus Lightning notification animation */
+  .zeus-lightning {
+    animation: lightning 0.5s ease-out forwards;
+  }
+
+  @keyframes lightning {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.8);
+    }
+    20% {
+      opacity: 1;
+      transform: translateY(0) scale(1.1);
+    }
+    40% {
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.8);
+    }
+  }
+
+  /* Faction styles */
+  .faction-sparta {
+    @apply border-sparta-primary/30;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+  }
+
+  .faction-athens {
+    @apply border-athens-primary/30;
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  /* Gold text gradient */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Marble text */
+  .text-marble {
+    color: #f8fafc;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
