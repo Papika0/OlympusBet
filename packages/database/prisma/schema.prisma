@@ -19,10 +19,8 @@ datasource db {
 // USER MANAGEMENT
 // =============================================================================
 
-/**
- * User - The central entity representing a player in OlympusBet.
- * Every user begins as a "Mortal" and can ascend through ranks by earning Ambrosia (XP).
- */
+// User - The central entity representing a player in OlympusBet.
+// Every user begins as a "Mortal" and can ascend through ranks by earning Ambrosia (XP).
 model User {
   id            String    @id @default(cuid())
   username      String    @unique
@@ -66,16 +64,13 @@ model User {
   @@index([factionId])
 }
 
-/**
- * Rank - The divine hierarchy of OlympusBet
- * Users progress through these ranks by accumulating Ambrosia
- * 
- * MORTAL: 0 Ambrosia - Starting rank, mere humans
- * HOPLITE: 1,000 Ambrosia - Greek foot soldiers
- * HERO: 10,000 Ambrosia - Legendary figures like Achilles
- * DEMIGOD: 100,000 Ambrosia - Half-divine beings like Hercules
- * OLYMPIAN: 1,000,000 Ambrosia - Full god status, dwelling on Mount Olympus
- */
+// Rank - The divine hierarchy of OlympusBet
+// Users progress through these ranks by accumulating Ambrosia
+// MORTAL: 0 Ambrosia - Starting rank, mere humans
+// HOPLITE: 1,000 Ambrosia - Greek foot soldiers
+// HERO: 10,000 Ambrosia - Legendary figures like Achilles
+// DEMIGOD: 100,000 Ambrosia - Half-divine beings like Hercules
+// OLYMPIAN: 1,000,000 Ambrosia - Full god status, dwelling on Mount Olympus
 enum Rank {
   MORTAL
   HOPLITE
@@ -88,10 +83,8 @@ enum Rank {
 // WALLET & TRANSACTIONS
 // =============================================================================
 
-/**
- * Wallet - Stores user cryptocurrency balances
- * Supports multiple currencies per user
- */
+// Wallet - Stores user cryptocurrency balances
+// Supports multiple currencies per user
 model Wallet {
   id            String    @id @default(cuid())
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -107,10 +100,8 @@ model Wallet {
   @@index([userId])
 }
 
-/**
- * Transaction - Records all financial movements
- * Includes deposits, withdrawals, bets, wins, and rewards
- */
+// Transaction - Records all financial movements
+// Includes deposits, withdrawals, bets, wins, and rewards
 model Transaction {
   id            String          @id @default(cuid())
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -164,17 +155,9 @@ enum TransactionStatus {
 // FACTION WARS
 // =============================================================================
 
-/**
- * Faction - Sparta vs Athens
- * 
- * SPARTA: High variance, aggressive bonuses
- * - Emphasizes bold plays and high-risk rewards
- * - "With your shield or on it" philosophy
- * 
- * ATHENS: Steady cashback, strategic bonuses
- * - Emphasizes consistent returns and calculated strategy
- * - "Know thyself" philosophy
- */
+// Faction - Sparta vs Athens
+// SPARTA: High variance, aggressive bonuses - "With your shield or on it"
+// ATHENS: Steady cashback, strategic bonuses - "Know thyself"
 model Faction {
   id            String    @id @default(cuid())
   name          FactionName @unique
@@ -200,10 +183,8 @@ enum FactionName {
   ATHENS
 }
 
-/**
- * FactionWar - Weekly competition between Sparta and Athens
- * The winning faction gets a 5% rakeback boost
- */
+// FactionWar - Weekly competition between Sparta and Athens
+// The winning faction gets a 5% rakeback boost
 model FactionWar {
   id            String    @id @default(cuid())
   
@@ -229,12 +210,9 @@ model FactionWar {
 // REWARDS SYSTEM - GOLDEN FLEECE CHESTS
 // =============================================================================
 
-/**
- * Reward - Level-up rewards (Golden Fleece Chests)
- * 
- * The Golden Fleece: In mythology, sought by Jason and the Argonauts.
- * Here, it represents the treasures users earn upon ascending ranks.
- */
+// Reward - Level-up rewards (Golden Fleece Chests)
+// The Golden Fleece: In mythology, sought by Jason and the Argonauts.
+// Here, it represents the treasures users earn upon ascending ranks.
 model Reward {
   id            String      @id @default(cuid())
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -273,17 +251,13 @@ enum RewardType {
 // HERALDS REFERRAL SYSTEM
 // =============================================================================
 
-/**
- * ReferralEarning - Tracks earnings from the Heralds referral program
- * 
- * Heralds: In ancient Greece, heralds were sacred messengers.
- * Here, they spread word of OlympusBet and earn from their recruits' play.
- * 
- * Multi-tier system:
- * - Tier 1: Direct referrals (highest %)
- * - Tier 2: Referrals of referrals (lower %)
- * - Tier 3: Third-level referrals (lowest %)
- */
+// ReferralEarning - Tracks earnings from the Heralds referral program
+// Heralds: In ancient Greece, heralds were sacred messengers.
+// Here, they spread word of OlympusBet and earn from their recruits' play.
+// Multi-tier system:
+// - Tier 1: Direct referrals (highest %)
+// - Tier 2: Referrals of referrals (lower %)
+// - Tier 3: Third-level referrals (lowest %)
 model ReferralEarning {
   id              String    @id @default(cuid())
   
@@ -317,9 +291,7 @@ model ReferralEarning {
   @@index([paid])
 }
 
-/**
- * ReferralConfig - Configuration for referral commission rates
- */
+// ReferralConfig - Configuration for referral commission rates
 model ReferralConfig {
   id              String    @id @default(cuid())
   
@@ -340,12 +312,9 @@ model ReferralConfig {
 // THE AGORA - CHAT SYSTEM
 // =============================================================================
 
-/**
- * ChatMessage - Messages in the global Agora chat
- * 
- * The Agora: The central gathering place in ancient Greek city-states.
- * Here, it serves as the global chat where users interact.
- */
+// ChatMessage - Messages in the global Agora chat
+// The Agora: The central gathering place in ancient Greek city-states.
+// Here, it serves as the global chat where users interact.
 model ChatMessage {
   id            String    @id @default(cuid())
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -362,12 +331,9 @@ model ChatMessage {
   @@index([createdAt])
 }
 
-/**
- * ZeusRainEvent - Tracks the divine crypto distributions
- * 
- * Zeus's Rain: Every 4 hours, Zeus distributes crypto to active chat users.
- * This mimics Zeus's role as the supreme god who bestows favors.
- */
+// ZeusRainEvent - Tracks the divine crypto distributions
+// Zeus's Rain: Every 4 hours, Zeus distributes crypto to active chat users.
+// This mimics Zeus's role as the supreme god who bestows favors.
 model ZeusRainEvent {
   id              String    @id @default(cuid())
   
@@ -393,10 +359,8 @@ model ZeusRainEvent {
 // LEVEL THRESHOLDS CONFIGURATION
 // =============================================================================
 
-/**
- * LevelConfig - Ambrosia thresholds for each rank
- * Configurable to allow adjustment of progression speed
- */
+// LevelConfig - Ambrosia thresholds for each rank
+// Configurable to allow adjustment of progression speed
 model LevelConfig {
   id                String    @id @default(cuid())
   

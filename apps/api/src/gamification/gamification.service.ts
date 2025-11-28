@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaClient, Rank, User, Transaction } from '@prisma/client';
+import { PrismaClient, Rank } from '@prisma/client';
 
 /**
  * Ambrosia thresholds for each rank in the Odyssey leveling system.
