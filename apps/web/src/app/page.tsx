@@ -60,7 +60,7 @@ export default function Home() {
           </h3>
           <p className="text-slate-400 font-inter text-sm">
             Become a Herald. Spread the word of Olympus and earn from your 
-            recruits&apos; wagers. Multi-tier rewards await.
+            recruits{"'"} wagers. Multi-tier rewards await.
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function Home() {
           </h3>
           <p className="text-slate-400 font-inter text-sm">
             Join the global gathering. Chat with fellow players and catch 
-            Zeus&apos;s Rain - random crypto drops every 4 hours!
+            Zeus{"'"}s Rain - random crypto drops every 4 hours!
           </p>
         </div>
 

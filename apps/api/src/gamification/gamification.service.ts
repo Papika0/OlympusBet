@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaClient, Rank } from '@prisma/client';
+import { PrismaClient, Rank, Prisma } from '@prisma/client';
+
+const Decimal = Prisma.Decimal;
 
 /**
  * Ambrosia thresholds for each rank in the Odyssey leveling system.
@@ -280,7 +282,7 @@ export class GamificationService {
         userId,
         type: 'BET',
         currency,
-        amount: wagerAmountUsd,
+        amount: new Decimal(wagerAmountUsd),
         gameId,
         gameRoundId,
         ambrosiaEarned,
